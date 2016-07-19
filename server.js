@@ -7,6 +7,8 @@ var PORT = process.env.PORT || 3000;
 var todos = [];
 var todoNextId = 1;
 
+var todo = require('./todoByID.js'); //id, todos
+
 app.use(bodyParser.json());
 
 app.get('/', function (req, res) {
@@ -21,13 +23,12 @@ app.get('/todos', function (req, res) {
 app.get('/todos/:id', function (req, res) {
 	var todoID = parseInt(req.params.id, 10);
 
-	var todo = require('./todoByID.js'); //id, todos
 	todo(todoID, todos)
 	.then(function (todo) {
 		res.json(todo);
 	})
 	.catch (function (error) {
-		res.sendStatus(404).send('Not found');
+		res.sendStatus(404).send('Todo not found');
 	});
 });
 
@@ -45,6 +46,20 @@ app.post('/todos', function (req, res) {
 	todos.push(body);
 
 	res.json(body);
+});
+
+//DELETE /todos/:id
+app.delete('/todos/:id', function (req, res) {
+	var todoID = parseInt(req.params.id, 10);
+
+	todo(todoID, todos)
+	.then(function (todo) {
+		todos = _.without(todos, todo);
+		res.json(todo);
+	})
+	.catch (function (error) {
+		res.sendStatus(404).send('Todo not found');
+	});
 });
 
 app.listen(PORT, function() {
