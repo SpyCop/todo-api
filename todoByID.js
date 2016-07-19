@@ -1,14 +1,15 @@
-module.exports = function (id, todos) {
+var _ = require('underscore');
+
+module.exports = function (todoId, todos) {
 	var matchingTodo;
 	return new Promise(
 		function (resolve, reject) {
-			todos.forEach(function (todo) {
-				if (todo.id === id) {
-					matchingTodo = todo;
-					return resolve(matchingTodo);
-				}
-			});
-			return reject('404');
+			matchingTodo = _.findWhere(todos, {id: todoId});
+			if (matchingTodo) {
+				return resolve(matchingTodo);
+			} else {
+				return reject('404');
+			}
 		}
 	);
 }
