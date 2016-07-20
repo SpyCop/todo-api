@@ -42,13 +42,15 @@ app.get('/todos', function(req, res) {
 app.get('/todos/:id', function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
 
-	todo(todoID, todos)
-		.then(function(todo) {
+	db.todo.findById(todoID).then(function(todo) {
+		if (!!todo) {
 			res.json(todo);
-		})
-		.catch(function(error) {
-			res.sendStatus(404).send('Todo not found');
-		});
+		} else {
+			res.status(404).send('Couldn\'t find this todo');
+		}
+	}).catch(function(error) {
+		res.status(500).send();
+	});
 });
 
 // POST /todos 
@@ -58,7 +60,7 @@ app.post('/todos', function(req, res) {
 	db.todo.create(body).then(function (todo) {
 		res.json(todo.toJSON());
 	}, function (e) {
-		res.sendStatus(400).json(e);
+		res.status(400).json(e);
 	});
 });
 
@@ -72,7 +74,7 @@ app.delete('/todos/:id', function(req, res) {
 			res.json(todo);
 		})
 		.catch(function(error) {
-			res.sendStatus(404).send('Todo not found');
+			res.status(404).send('Todo not found');
 		});
 });
 
@@ -88,20 +90,20 @@ app.put('/todos/:id', function(req, res) {
 			if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
 				validAttributes.completed = body.completed;
 			} else if (body.hasOwnProperty('completed')) {
-				return res.sendStatus(400);
+				return res.status(400).send();
 			}
 
 			if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
 				validAttributes.description = body.description;
 			} else if (body.hasOwnProperty('description')) {
-				return res.sendStatus(400);
+				return res.status(400).send();
 			}
 
 			_.extend(todo, validAttributes);
 			res.json(todo);
 		})
 		.catch(function(error) {
-			res.sendStatus(404).send('Todo not found');
+			res.status(404).send('Todo not found');
 		});
 
 });
