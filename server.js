@@ -27,9 +27,10 @@ app.get('/todos', function(req, res) {
 		where.completed = false;
 	}
 	if (query.hasOwnProperty('q') && query.q.length > 0) {
-		where.description = {
-			$like: '%' + query.q + '%'
-		}
+		var key = (db.env === 'production') ? '$iLike' : '$like';
+		where.description = {};
+		where.description[key] = '%' + query.q + '%';
+
 	}
 
 	db.todo.findAll({
