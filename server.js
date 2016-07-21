@@ -37,7 +37,7 @@ app.get('/todos', function(req, res) {
 	}).then(function(todos) {
 		res.json(todos);
 	}).catch(function(error) {
-		res.status(500).send();
+		res.status(500).send('You should give valid attributes to select: completed=(true || false)&&q=(validString)');
 	});
 });
 
@@ -52,7 +52,7 @@ app.get('/todos/:id', function(req, res) {
 			res.status(404).send('Couldn\'t find this todo');
 		}
 	}).catch(function(error) {
-		res.status(500).send();
+		res.status(500).send('You should give a valid ID (valid int) to view');
 	});
 });
 
@@ -71,13 +71,21 @@ app.post('/todos', function(req, res) {
 app.delete('/todos/:id', function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
 
-	todo(todoID, todos)
+	db.todo.findById(todoID)
 		.then(function(todo) {
-			todos = _.without(todos, todo);
-			res.json(todo);
-		})
-		.catch(function(error) {
-			res.status(404).send('Todo not found');
+			if (!!todo) {
+				db.todo.destroy({
+					where: {
+						id: todoID
+					}
+				}).then(function(rowsDeleted) {
+					res.json(todo); //status 204 could be send without data
+				});
+			} else {
+				res.status(404).send('No todo found with that ID');
+			}
+		}).catch(function(error) {
+			res.status(500).send('You should give a valid ID (valid int) to delete');
 		});
 });
 
