@@ -8,8 +8,6 @@ var PORT = process.env.PORT || 3000;
 var todos = [];
 var todoNextId = 1;
 
-var todo = require('./todoByID.js'); //id, todos
-
 app.use(bodyParser.json());
 
 app.get('/', function(req, res) {
@@ -92,31 +90,33 @@ app.delete('/todos/:id', function(req, res) {
 //PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
+	var body = _.pick(req.body, 'description', 'completed');
+	var attributes = {};
 
-	todo(todoID, todos)
+	if (body.hasOwnProperty('completed')) {
+		attributes.completed = body.completed;
+	}
+	if (body.hasOwnProperty('description')) {
+		attributes.description = body.description;
+	}
+
+	db.todo.findById(todoID)
 		.then(function(todo) {
-			var body = _.pick(req.body, 'description', 'completed');
-			var validAttributes = {};
-
-			if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-				validAttributes.completed = body.completed;
-			} else if (body.hasOwnProperty('completed')) {
-				return res.status(400).send();
+			if (!!todo) {
+				todo.update(attributes)
+					.then(function(todo) {
+						res.json(todo.toJSON());
+					}, function(e) {
+						res.status(400).json(e);
+					});
+			} else {
+				res.status(404).send('No todo found with that ID');
 			}
-
-			if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-				validAttributes.description = body.description;
-			} else if (body.hasOwnProperty('description')) {
-				return res.status(400).send();
-			}
-
-			_.extend(todo, validAttributes);
-			res.json(todo);
-		})
-		.catch(function(error) {
-			res.status(404).send('Todo not found');
+		}, function(e) {
+			res.status(500).send('You should give a valid ID (valid int) to update')
+		}, function (e) {
+			res.status(404).send('Cannot find todo with this ID');
 		});
-
 });
 
 db.sequelize.sync().then(function() {
