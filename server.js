@@ -30,7 +30,7 @@ app.get('/todos', function(req, res) {
 		var key = (db.env === 'production') ? '$iLike' : '$like';
 		where.description = {};
 		where.description[key] = '%' + query.q + '%';
-
+		console.log(where.description);
 	}
 
 	db.todo.findAll({
