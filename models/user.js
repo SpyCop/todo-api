@@ -42,28 +42,6 @@ module.exports = function(sequelize, DataTypes) {
 				}
 			}
 		},
-		instanceMethods: {
-			toPublicJSON: function() {
-				var json = this.toJSON();
-				return _.pick(json, 'id', 'email', 'updatedAt', 'createdAt');
-			},
-			generateToken: function (type) {
-				if (!_.isString(type)) {
-					return undefined;
-				}
-
-				try {
-					var stringData = JSON.stringify({id: this.get('id'), type: type})
-					var encryptedData = cryptojs.AES.encrypt(stringData, 'fknmodfkr').toString();
-					var token = jwt.sign({
-						token: encryptedData
-					}, '123456');
-					return token;
-				} catch (e) {
-					return undefined;
-				}
-			}
-		},
 		classMethods: {
 			authenticate: function(body) {
 				return new Promise(function(resolve, reject) {
@@ -84,7 +62,53 @@ module.exports = function(sequelize, DataTypes) {
 					}, function(error) {
 						reject();
 					});
-				})
+				});
+			},
+			findByToken: function(token) {
+				return new Promise(function(resolve, reject) {
+					try {
+						var decodedJWT = jwt.verify(token, '123456');
+						var bytes = cryptojs.AES.decrypt(decodedJWT.token, 'fknmodfkr');
+						var tokenData = JSON.parse(bytes.toString(cryptojs.enc.Utf8));
+
+						user.findById(tokenData.id).then(function(user) {
+							if (user) {
+								resolve(user);
+							} else {
+								reject();
+							}
+						}, function(error) {
+							reject();
+						})
+					} catch (e) {
+						reject();
+					}
+				});
+			}
+		},
+		instanceMethods: {
+			toPublicJSON: function() {
+				var json = this.toJSON();
+				return _.pick(json, 'id', 'email', 'updatedAt', 'createdAt');
+			},
+			generateToken: function(type) {
+				if (!_.isString(type)) {
+					return undefined;
+				}
+
+				try {
+					var stringData = JSON.stringify({
+						id: this.get('id'),
+						type: type
+					})
+					var encryptedData = cryptojs.AES.encrypt(stringData, 'fknmodfkr').toString();
+					var token = jwt.sign({
+						token: encryptedData
+					}, '123456');
+					return token;
+				} catch (e) {
+					return undefined;
+				}
 			}
 		}
 	});
