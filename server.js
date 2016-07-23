@@ -83,26 +83,20 @@ app.post('/todos', middleware.requireAuth, function(req, res) {
 app.delete('/todos/:id', middleware.requireAuth, function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
 	//add userId
-	db.todo.findOne({
+	db.todo.destroy({
 		where: {
-			id: todoID,
+			id: todoID
 			userId: req.user.get('id')
 		}
-	}).then(function(todo) {
-			if (!!todo) {
-				db.todo.destroy({
-					where: {
-						id: todoID
-					}
-				}).then(function(rowsDeleted) {
-					res.json(todo); //status 204 could be send without data
-				});
-			} else {
-				res.status(404).send('No todo found with that ID');
-			}
-		}).catch(function(error) {
-			res.status(500).send('You should give a valid ID (valid int) to delete');
-		});
+	}).then(function(rowsDeleted) {
+		if (rowsDeleted !== 0) {
+			res.json(todo); //status 204 could be send without data
+		} else {
+			res.status(404).send('No todo found with that ID');
+		}
+	}, function(error) {
+		res.status(500).send('You should give a valid ID (valid int) to delete');
+	});
 });
 
 //PUT /todos/:id
@@ -124,21 +118,21 @@ app.put('/todos/:id', middleware.requireAuth, function(req, res) {
 			userId: req.user.get('id')
 		}
 	}).then(function(todo) {
-			if (!!todo) {
-				todo.update(attributes)
-					.then(function(todo) {
-						res.json(todo.toJSON());
-					}, function(e) {
-						res.status(400).json(e);
-					});
-			} else {
-				res.status(404).send('No todo found with that ID');
-			}
-		}, function(e) {
-			res.status(500).send('You should give a valid ID (valid int) to update')
-		}, function(e) {
-			res.status(404).send('Cannot find todo with this ID');
-		});
+		if (!!todo) {
+			todo.update(attributes)
+				.then(function(todo) {
+					res.json(todo.toJSON());
+				}, function(e) {
+					res.status(400).json(e);
+				});
+		} else {
+			res.status(404).send('No todo found with that ID');
+		}
+	}, function(e) {
+		res.status(500).send('You should give a valid ID (valid int) to update')
+	}, function(e) {
+		res.status(404).send('Cannot find todo with this ID');
+	});
 });
 
 //POST /users
@@ -170,7 +164,7 @@ app.post('/users/login', function(req, res) {
 });
 
 db.sequelize.sync({
-	//force: true
+	force: true
 }).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express listening on port ' + PORT + '!');
