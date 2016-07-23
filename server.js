@@ -82,15 +82,15 @@ app.post('/todos', middleware.requireAuth, function(req, res) {
 //DELETE /todos/:id
 app.delete('/todos/:id', middleware.requireAuth, function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
-	//add userId
+
 	db.todo.destroy({
 		where: {
 			id: todoID,
 			userId: req.user.get('id')
 		}
 	}).then(function(rowsDeleted) {
-		if (rowsDeleted !== 0) {
-			res.json(todo); //status 204 could be send without data
+		if (rowsDeleted > 0) {
+			res.status(204).send();
 		} else {
 			res.status(404).send('No todo found with that ID');
 		}
