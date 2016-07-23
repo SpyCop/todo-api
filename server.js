@@ -85,7 +85,7 @@ app.delete('/todos/:id', middleware.requireAuth, function(req, res) {
 	//add userId
 	db.todo.destroy({
 		where: {
-			id: todoID
+			id: todoID,
 			userId: req.user.get('id')
 		}
 	}).then(function(rowsDeleted) {
