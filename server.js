@@ -20,7 +20,9 @@ app.get('/', function(req, res) {
 //GET /todos?complete=true&q=work
 app.get('/todos', middleware.requireAuth, function(req, res) {
 	var query = req.query;
-	var where = {};
+	var where = {
+		userId: req.user.get('id')
+	};
 
 	if (query.hasOwnProperty('completed') && query.completed === 'true') {
 		where.completed = true;
@@ -46,7 +48,12 @@ app.get('/todos', middleware.requireAuth, function(req, res) {
 app.get('/todos/:id', middleware.requireAuth, function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
 
-	db.todo.findById(todoID).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: todoID,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) { //findOne with id and userid
 		if (!!todo) {
 			res.json(todo);
 		} else {
@@ -62,9 +69,9 @@ app.post('/todos', middleware.requireAuth, function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-		req.user.addTodo(todo).then(function () {
+		req.user.addTodo(todo).then(function() {
 			return todo.reload();
-		}).then(function (todo) {
+		}).then(function(todo) {
 			res.json(todo.toJSON());
 		});
 	}, function(e) {
@@ -75,9 +82,13 @@ app.post('/todos', middleware.requireAuth, function(req, res) {
 //DELETE /todos/:id
 app.delete('/todos/:id', middleware.requireAuth, function(req, res) {
 	var todoID = parseInt(req.params.id, 10);
-
-	db.todo.findById(todoID)
-		.then(function(todo) {
+	//add userId
+	db.todo.findOne({
+		where: {
+			id: todoID,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) {
 			if (!!todo) {
 				db.todo.destroy({
 					where: {
@@ -107,8 +118,12 @@ app.put('/todos/:id', middleware.requireAuth, function(req, res) {
 		attributes.description = body.description;
 	}
 
-	db.todo.findById(todoID)
-		.then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: todoID,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) {
 			if (!!todo) {
 				todo.update(attributes)
 					.then(function(todo) {
@@ -140,7 +155,7 @@ app.post('/users', function(req, res) {
 //POST /users/login
 app.post('/users/login', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
-	
+
 	db.user.authenticate(body)
 		.then(function(user) {
 			var token = user.generateToken('authentication');
